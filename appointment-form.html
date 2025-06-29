@@ -5,14 +5,23 @@
   <title>Book Online</title>
   <style>
     .appointment-widget { max-width: 350px; margin: auto; font-family: sans-serif; }
-    .appointment-widget input, .appointment-widget select, .appointment-widget button {
+    .appointment-widget input,
+    .appointment-widget select,
+    .appointment-widget button {
       width: 100%; margin: .5em 0; padding: .5em; box-sizing: border-box;
     }
   </style>
 </head>
 <body>
   <div class="appointment-widget">
-    <form id="appointmentForm">
+    <form
+      id="appointmentForm"
+      method="POST"
+      action="https://aleks213.app.n8n.cloud/webhook/d137f819-ab72-4e99-b564-b675efd01af9"
+    >
+      <!-- ukryte pole na businessId -->
+      <input type="hidden" name="businessId" value="">
+      
       <input name="firstName" placeholder="Imię" required>
       <input name="lastName" placeholder="Nazwisko" required>
       <input name="phone" placeholder="Telefon (SMS)" required>
@@ -26,32 +35,18 @@
       <p id="status" style="color: green;"></p>
     </form>
   </div>
+
   <script>
+    // Wypełniamy ukryte pole businessId z query string
+    const params = new URLSearchParams(location.search);
+    const biz = params.get('businessId') || '';
+    document.querySelector('input[name="businessId"]').value = biz;
+
+    // Pokazujemy komunikat po submit
     const form = document.getElementById('appointmentForm');
     const status = document.getElementById('status');
-    const businessId = new URLSearchParams(location.search).get('businessId') || 'UNKNOWN';
-
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-      const data = Object.fromEntries(new FormData(form));
-      data.businessId = businessId;
-      try {
-        const res = await fetch('https://aleks213.app.n8n.cloud/webhook/d137f819-ab72-4e99-b564-b675efd01af9', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        if (res.ok) {
-          status.textContent = 'Dziękujemy! Twoja wizyta została zapisana.';
-          form.reset();
-        } else {
-          status.style.color = 'red';
-          status.textContent = 'Błąd — spróbuj ponownie.';
-        }
-      } catch {
-        status.style.color = 'red';
-        status.textContent = 'Błąd sieci — spróbuj później.';
-      }
+    form.addEventListener('submit', () => {
+      status.textContent = 'Wysyłanie…';
     });
   </script>
 </body>
