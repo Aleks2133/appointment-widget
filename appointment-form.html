@@ -4,21 +4,99 @@
   <meta charset="UTF-8">
   <title>Book Online</title>
   <style>
-    .appointment-widget { max-width: 350px; margin: auto; font-family: sans-serif; }
+    /* --- RESET I PODSTAWY --- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    body {
+      background: #f7f9fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    /* --- KONTAINER WIDGETU --- */
+    .appointment-widget {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      width: 100%;
+      max-width: 380px;
+      padding: 24px;
+      color: #33475b;
+    }
+    .appointment-widget h2 {
+      margin-bottom: 16px;
+      font-size: 1.4rem;
+      color: #1d2939;
+      text-align: center;
+    }
+
+    /* --- STYLE PÓL INPUT/SELECT --- */
     .appointment-widget input,
-    .appointment-widget select,
+    .appointment-widget select {
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      background: #f9fafb;
+      font-size: 1rem;
+      color: #33475b;
+      transition: border-color .2s, background .2s;
+    }
+    .appointment-widget input:focus,
+    .appointment-widget select:focus {
+      border-color: #7f56d9;
+      background: #ffffff;
+      outline: none;
+    }
+    .appointment-widget input::placeholder {
+      color: #98a2b3;
+    }
+
+    /* --- PRZYCISK --- */
     .appointment-widget button {
-      width: 100%; margin: .5em 0; padding: .5em; box-sizing: border-box;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #8f6cc4, #b188eb);
+      border: none;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .appointment-widget button:hover {
+      opacity: 0.95;
+    }
+    .appointment-widget button:active {
+      transform: scale(0.98);
+    }
+
+    /* --- WIADOMOŚĆ STATUSU --- */
+    .appointment-widget #status {
+      margin-top: 12px;
+      font-size: 0.95rem;
+      color: #12b76a;
+      text-align: center;
+      min-height: 1.2em;
     }
   </style>
 </head>
 <body>
   <div class="appointment-widget">
+    <h2>Zarezerwuj wizytę</h2>
     <form
       id="appointmentForm"
-  method="POST"
-  action="https://aleks213.app.n8n.cloud/webhook-test/d137f819-ab72-4e99-b564-b675efd01af9"
->
+      method="POST"
+      action="https://aleks213.app.n8n.cloud/webhook-test/d137f819-ab72-4e99-b564-b675efd01af9"
+    >
       <!-- ukryte pole na businessId -->
       <input type="hidden" name="businessId" value="">
       
@@ -32,7 +110,7 @@
         <option value="Koloryzacja">Koloryzacja</option>
       </select>
       <button type="submit">Umów wizytę</button>
-      <p id="status" style="color: green;"></p>
+      <p id="status"></p>
     </form>
   </div>
 
@@ -48,6 +126,7 @@
     form.addEventListener('submit', () => {
       status.textContent = 'Wysyłanie…';
     });
+    // Po odpowiedzi serwera możesz dodać kolejne obsługi np. success / error
   </script>
 </body>
 </html>
