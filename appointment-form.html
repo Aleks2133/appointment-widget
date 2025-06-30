@@ -2,109 +2,71 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>Book Online</title>
+  <title>Umów wizytę – Salon XYZ</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    /* --- RESET I PODSTAWY --- */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-    }
-    body {
-      background: #f7f9fc;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
+    /* --- Podstawowy reset i font --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f7f3f9; color: #333; }
+    .container { max-width: 400px; margin: 2rem auto; padding: 1.5rem; background: #fff;
+                 border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    h1 { text-align: center; margin-bottom: 1rem; color: #6b4f8b; }
 
-    /* --- KONTAINER WIDGETU --- */
-    .appointment-widget {
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-      width: 100%;
-      max-width: 380px;
-      padding: 24px;
-      color: #33475b;
-    }
-    .appointment-widget h2 {
-      margin-bottom: 16px;
-      font-size: 1.4rem;
-      color: #1d2939;
-      text-align: center;
-    }
-
-    /* --- STYLE PÓL INPUT/SELECT --- */
-    .appointment-widget input,
-    .appointment-widget select {
-      width: 100%;
-      padding: 12px 16px;
-      margin-bottom: 14px;
-      border: 1px solid #d0d5dd;
-      border-radius: 8px;
-      background: #f9fafb;
+    /* --- Style formularza --- */
+    form input, form select, form button {
+      width: 100%; padding: 0.75rem; margin: 0.5rem 0;
+      border: 1px solid #ccc; border-radius: 4px;
       font-size: 1rem;
-      color: #33475b;
-      transition: border-color .2s, background .2s;
     }
-    .appointment-widget input:focus,
-    .appointment-widget select:focus {
-      border-color: #7f56d9;
-      background: #ffffff;
-      outline: none;
+    form input:focus, form select:focus {
+      border-color: #6b4f8b; outline: none;
+      box-shadow: 0 0 0 3px rgba(107,79,139,0.2);
     }
-    .appointment-widget input::placeholder {
-      color: #98a2b3;
+    form button {
+      background: #6b4f8b; color: #fff; font-weight: bold;
+      border: none; cursor: pointer; transition: background .2s;
     }
+    form button:hover {
+      background: #56376b;
+    }
+    #status { text-align: center; margin-top: .5rem; color: #2d7a2d; }
 
-    /* --- PRZYCISK --- */
-    .appointment-widget button {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #8f6cc4, #b188eb);
-      border: none;
-      border-radius: 8px;
-      color: #ffffff;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity .2s, transform .1s;
-    }
-    .appointment-widget button:hover {
-      opacity: 0.95;
-    }
-    .appointment-widget button:active {
-      transform: scale(0.98);
-    }
-
-    /* --- WIADOMOŚĆ STATUSU --- */
-    .appointment-widget #status {
-      margin-top: 12px;
-      font-size: 0.95rem;
-      color: #12b76a;
-      text-align: center;
-      min-height: 1.2em;
-    }
+    /* --- Kalendarz --- */
+    .calendar { width: 100%; margin: 1rem 0; }
+    .calendar .day { display: inline-block; width: calc(100%/7); text-align: center;
+                     padding: .5rem 0; cursor: pointer; border-radius: 4px; }
+    .calendar .day:hover { background: rgba(107,79,139,0.1); }
+    .calendar .day.selected { background: #6b4f8b; color: #fff; }
+    .calendar-header { text-align: center; margin-bottom: .5rem; }
+    .calendar-nav { cursor: pointer; user-select: none; }
   </style>
 </head>
 <body>
-  <div class="appointment-widget">
-    <h2>Zarezerwuj wizytę</h2>
-    <form
-      id="appointmentForm"
-      method="POST"
-      action="https://aleks213.app.n8n.cloud/webhook-test/d137f819-ab72-4e99-b564-b675efd01af9"
-    >
-      <!-- ukryte pole na businessId -->
+  <div class="container">
+    <h1>Umów wizytę</h1>
+    <form id="appointmentForm" method="POST"
+          action="https://aleks213.app.n8n.cloud/webhook-test/d137f819-ab72-4e99-b564-b675efd01af9">
       <input type="hidden" name="businessId" value="">
-      
-      <input name="firstName" placeholder="Imię" required>
-      <input name="lastName" placeholder="Nazwisko" required>
-      <input name="phone" placeholder="Telefon (SMS)" required>
-      <input name="email" placeholder="E-mail (opcjonalnie)">
-      <input name="appointment" type="datetime-local" required>
+      <input type="text" name="firstName" placeholder="Imię" required>
+      <input type="text" name="lastName" placeholder="Nazwisko" required>
+      <input type="tel"  name="phone" placeholder="Telefon (SMS)" required>
+      <input type="email"name="email" placeholder="E-mail (opcjonalnie)">
+
+      <!-- Kalendarz wybierania daty -->
+      <div class="calendar">
+        <div class="calendar-header">
+          <span class="calendar-nav" id="prevMonth">&#10094;</span>
+          <span id="monthYear"></span>
+          <span class="calendar-nav" id="nextMonth">&#10095;</span>
+        </div>
+        <div id="daysGrid"></div>
+      </div>
+
+      <!-- Wybór godziny (co 30 min od 8:00 do 18:00) -->
+      <select name="appointmentTime" id="timeSelect" required>
+        <option value="">Wybierz godzinę</option>
+      </select>
+
       <select name="service">
         <option value="Strzyżenie">Strzyżenie</option>
         <option value="Koloryzacja">Koloryzacja</option>
@@ -115,18 +77,99 @@
   </div>
 
   <script>
-    // Wypełniamy ukryte pole businessId z query string
+    // 1) Wypełnij businessId z URL
     const params = new URLSearchParams(location.search);
-    const biz = params.get('businessId') || '';
-    document.querySelector('input[name="businessId"]').value = biz;
+    document.querySelector('[name="businessId"]').value = params.get('businessId')||'';
 
-    // Pokazujemy komunikat po submit
-    const form = document.getElementById('appointmentForm');
+    // 2) Calendar widget
+    const monthYear = document.getElementById('monthYear');
+    const daysGrid  = document.getElementById('daysGrid');
+    let current = new Date();
+
+    function renderCalendar() {
+      daysGrid.innerHTML = '';
+      const y = current.getFullYear(), m = current.getMonth();
+      monthYear.textContent = current.toLocaleString('pl', { month:'long', year:'numeric' });
+
+      const firstDay = new Date(y,m,1).getDay(); // 0=nd,1=pon...
+      const daysInMonth = new Date(y,m+1,0).getDate();
+
+      // Nadmiarowe puste pola
+      for(let i=0; i<(firstDay+6)%7; i++){
+        const empty = document.createElement('div');
+        empty.classList.add('day');
+        daysGrid.appendChild(empty);
+      }
+
+      // Dni aktualnego miesiąca
+      for(let d=1; d<=daysInMonth; d++){
+        const day = document.createElement('div');
+        day.textContent = d;
+        day.classList.add('day');
+        day.dataset.date = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+        day.addEventListener('click', () => {
+          document.querySelectorAll('.calendar .day').forEach(n=>n.classList.remove('selected'));
+          day.classList.add('selected');
+          populateTimes();
+        });
+        daysGrid.appendChild(day);
+      }
+    }
+    document.getElementById('prevMonth').onclick = () => { current.setMonth(current.getMonth()-1); renderCalendar(); };
+    document.getElementById('nextMonth').onclick = () => { current.setMonth(current.getMonth()+1); renderCalendar(); };
+    renderCalendar();
+
+    // 3) Times dropdown (co 30 minut, 8:00–18:00)
+    const timeSelect = document.getElementById('timeSelect');
+    function populateTimes(){
+      timeSelect.innerHTML = '<option value="">Wybierz godzinę</option>';
+      for(let h=8; h<=17; h++){
+        ['00','30'].forEach(min=>{
+          const opt = document.createElement('option');
+          opt.value = `${h.toString().padStart(2,'0')}:${min}`;
+          opt.textContent = `${h.toString().padStart(2,'0')}:${min}`;
+          timeSelect.appendChild(opt);
+        });
+      }
+    }
+    populateTimes();
+
+    // 4) Po submicie łączymy date+time w pole appointment
+    const form   = document.getElementById('appointmentForm');
     const status = document.getElementById('status');
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', e => {
+      e.preventDefault();
       status.textContent = 'Wysyłanie…';
+
+      const selDay = document.querySelector('.calendar .day.selected');
+      const selTime= timeSelect.value;
+      if(!selDay || !selTime){
+        alert('Wybierz dzień i godzinę!');
+        status.textContent = '';
+        return;
+      }
+
+      // Ustaw pole appointment
+      const date = selDay.dataset.date;          // YYYY-MM-DD
+      form.querySelector('input[name="appointment"]')?.remove();
+      const inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = 'appointment';
+      inp.value= `${date} ${selTime}`;
+      form.appendChild(inp);
+
+      // wyślij AJAX-em
+      fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+      })
+      .then(r=>r.json())
+      .then(js=>{
+        status.textContent = js.message ? js.message : 'OK!';
+      })
+      .catch(() => {
+        status.textContent = 'Błąd sieci. Spróbuj ponownie.';
+      });
     });
-    // Po odpowiedzi serwera możesz dodać kolejne obsługi np. success / error
   </script>
 </body>
 </html>
