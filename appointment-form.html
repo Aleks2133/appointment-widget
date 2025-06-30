@@ -5,7 +5,44 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Umów wizytę – Salon XYZ</title>
   <style>
-    /* ... Twoje style bez zmian ... */
+    /* RESET + BAZA */
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body { font-family:sans-serif; background:#f7f3f9; color:#333; }
+    .container { max-width:400px; margin:2rem auto; padding:1.5rem;
+      background:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
+    h1 { text-align:center; margin-bottom:1rem; color:#6b4f8b; }
+    /* FORMULARZ */
+    form input, form select, form button {
+      width:100%; padding:.75rem; margin:.5rem 0;
+      border:1px solid #ccc; border-radius:4px; font-size:1rem;
+    }
+    form input:focus, form select:focus {
+      outline:none; border-color:#6b4f8b; box-shadow:0 0 0 3px rgba(107,79,139,0.2);
+    }
+    form button {
+      background:#6b4f8b; color:#fff; font-weight:bold;
+      border:none; cursor:pointer; transition:.2s;
+    }
+    form button:hover { background:#56376b; }
+    #status { text-align:center; margin-top:.5rem; color:#2d7a2d; }
+    /* KALENDARZ */
+    .calendar { width:100%; margin:1rem 0; }
+    .calendar-header {
+      display:flex; justify-content:space-between; align-items:center;
+      margin-bottom:.5rem;
+    }
+    .calendar-nav { cursor:pointer; font-size:1.2rem; user-select:none; }
+    #monthYear { font-weight:bold; }
+    #daysGrid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    .day {
+      padding:.5rem 0; text-align:center; cursor:pointer;
+      border-radius:4px; transition:.2s;
+    }
+    .day:hover { background:rgba(107,79,139,0.1); }
+    .day.selected { background:#6b4f8b; color:#fff; }
+    .day.disabled {
+      cursor:default; background:#eee; color:#999;
+    }
   </style>
 </head>
 <body>
@@ -58,7 +95,7 @@
     let current     = new Date();
     let bookedSlots = [];
 
-    // 2) Funkcja pobierająca zarezerwowane sloty z Workflow B
+    // 2) Pobierz zajęte sloty z Workflow B
     async function loadBooked(year,month){
       try {
         const res = await fetch(
@@ -104,7 +141,7 @@
         if(y===tY && m===tM && d<tD) {
           day.classList.add('disabled');
         } else {
-          // jeśli wszystkie sloty zajęte → .disabled
+          // blokuj pełne dni
           const count = bookedSlots.filter(s=>s.startsWith(day.dataset.date)).length;
           const maxSlots = (18-8)*2;
           if(count >= maxSlots) day.classList.add('disabled');
@@ -125,7 +162,7 @@
     document.getElementById('prevMonth').onclick = ()=>{ current.setMonth(current.getMonth()-1); renderCalendar(); };
     document.getElementById('nextMonth').onclick = ()=>{ current.setMonth(current.getMonth()+1); renderCalendar(); };
 
-    // 4) Wypełnienie dropdowna godzin
+    // 4) Generowanie listy godzin
     function populateTimes(){
       timeSelect.innerHTML = '<option value="">Wybierz godzinę</option>';
       const sel = document.querySelector('.calendar .day.selected');
@@ -141,16 +178,15 @@
           opt.value = `${String(h).padStart(2,'0')}:${min}`;
           opt.textContent = opt.value;
 
-          // blokuj zajęte sloty z bookedSlots
+          // jeśli zajęte
           if(bookedSlots.includes(slot)){
             opt.disabled = true;
             opt.textContent += ' (zajęte)';
           }
-          // blokuj przeszłe dziś
+          // jeśli dziś i czas przeszły
           if(isToday){
             const [hh,mm] = [h, +min];
-            if(hh < today.getHours() ||
-              (hh===today.getHours() && mm <= today.getMinutes())){
+            if(hh < today.getHours() || (hh===today.getHours() && mm <= today.getMinutes())){
               opt.disabled = true;
               opt.textContent += ' (minęło)';
             }
@@ -160,25 +196,23 @@
       }
     }
 
-    // 5) Obsługa submit
+    // 5) Obsługa wysyłki formularza
     form.addEventListener('submit', e=>{
       e.preventDefault();
       status.textContent = 'Wysyłanie…';
       const sel = document.querySelector('.calendar .day.selected');
       const time = timeSelect.value;
-      if(!sel||!time){
+      if(!sel || !time){
         alert('Wybierz dzień i godzinę.');
         status.textContent = '';
         return;
       }
-      // ukryte pole appointment
       form.querySelector('[name="appointment"]')?.remove();
       const inp = document.createElement('input');
       inp.type = 'hidden'; inp.name = 'appointment';
       inp.value= `${sel.dataset.date} ${time}`;
       form.appendChild(inp);
 
-      // wysyłamy do POST-owego endpointu Workflow A
       fetch(form.action,{
         method:'POST', body:new FormData(form),
       })
