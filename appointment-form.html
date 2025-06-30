@@ -5,51 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Umów wizytę – Salon XYZ</title>
   <style>
-    /* RESET + BAZA */
-    * { box-sizing: border-box; margin:0; padding:0; }
-    body { font-family:sans-serif; background:#f7f3f9; color:#333; }
-    .container { max-width:400px; margin:2rem auto; padding:1.5rem;
-      background:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
-    h1 { text-align:center; margin-bottom:1rem; color:#6b4f8b; }
-    /* FORMULARZ */
-    form input, form select, form button {
-      width:100%; padding:.75rem; margin:.5rem 0;
-      border:1px solid #ccc; border-radius:4px; font-size:1rem;
-    }
-    form input:focus, form select:focus {
-      outline:none; border-color:#6b4f8b; box-shadow:0 0 0 3px rgba(107,79,139,0.2);
-    }
-    form button {
-      background:#6b4f8b; color:#fff; font-weight:bold;
-      border:none; cursor:pointer; transition:.2s;
-    }
-    form button:hover { background:#56376b; }
-    #status { text-align:center; margin-top:.5rem; color:#2d7a2d; }
-    /* KALENDARZ */
-    .calendar { width:100%; margin:1rem 0; }
-    .calendar-header {
-      display:flex; justify-content:space-between; align-items:center;
-      margin-bottom:.5rem;
-    }
-    .calendar-nav { cursor:pointer; font-size:1.2rem; user-select:none; }
-    #monthYear { font-weight:bold; }
-    #daysGrid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
-    .day {
-      padding:.5rem 0; text-align:center; cursor:pointer;
-      border-radius:4px; transition:.2s;
-    }
-    .day:hover { background:rgba(107,79,139,0.1); }
-    .day.selected { background:#6b4f8b; color:#fff; }
-    .day.disabled {
-      cursor:default; background:#eee; color:#999;
-    }
+    /* ... Twoje style bez zmian ... */
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Umów wizytę</h1>
     <form id="appointmentForm" method="POST"
-      action="https://aleks213.app.n8n.cloud/webhook-test/d137f819-ab72-4e99-b564-b675efd01af9">
+      action="https://aleks213.app.n8n.cloud/webhook/bookAppointment">
       <input type="hidden" name="businessId"/>
       <input type="text"    name="firstName" placeholder="Imię" required/>
       <input type="text"    name="lastName"  placeholder="Nazwisko" required/>
@@ -95,11 +58,11 @@
     let current     = new Date();
     let bookedSlots = [];
 
-    // 2) Funkcja pobierająca zarezerwowane sloty z n8n
+    // 2) Funkcja pobierająca zarezerwowane sloty z Workflow B
     async function loadBooked(year,month){
       try {
         const res = await fetch(
-          `https://aleks213.app.n8n.cloud/webhook/getBooked?year=${year}&month=${month+1}`
+          `https://aleks213.app.n8n.cloud/webhook/bookedSlots?year=${year}&month=${month+1}`
         );
         const js  = await res.json();
         bookedSlots = js.booked || [];
@@ -114,7 +77,6 @@
       daysGrid.innerHTML = '';
       const y = current.getFullYear(), m = current.getMonth();
       monthYear.textContent = current.toLocaleString('pl',{month:'long',year:'numeric'});
-
       await loadBooked(y,m);
 
       const firstDay    = new Date(y,m,1).getDay();
@@ -131,18 +93,18 @@
         daysGrid.appendChild(e);
       }
 
-      // dni
+      // dni miesiąca
       for(let d=1; d<=daysInMonth; d++){
         const day = document.createElement('div');
         day.textContent = d;
         day.classList.add('day');
         day.dataset.date = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-        // blokuj dni przeszłe
+        // blokuj przeszłe dni
         if(y===tY && m===tM && d<tD) {
           day.classList.add('disabled');
         } else {
-          // jeśli wszystkie sloty zajęte -> .disabled
+          // jeśli wszystkie sloty zajęte → .disabled
           const count = bookedSlots.filter(s=>s.startsWith(day.dataset.date)).length;
           const maxSlots = (18-8)*2;
           if(count >= maxSlots) day.classList.add('disabled');
@@ -159,16 +121,11 @@
         daysGrid.appendChild(day);
       }
     }
-    document.getElementById('prevMonth').onclick = ()=>{
-      current.setMonth(current.getMonth()-1);
-      renderCalendar();
-    };
-    document.getElementById('nextMonth').onclick = ()=>{
-      current.setMonth(current.getMonth()+1);
-      renderCalendar();
-    };
 
-    // 4) Wypełnij dropdown godzin
+    document.getElementById('prevMonth').onclick = ()=>{ current.setMonth(current.getMonth()-1); renderCalendar(); };
+    document.getElementById('nextMonth').onclick = ()=>{ current.setMonth(current.getMonth()+1); renderCalendar(); };
+
+    // 4) Wypełnienie dropdowna godzin
     function populateTimes(){
       timeSelect.innerHTML = '<option value="">Wybierz godzinę</option>';
       const sel = document.querySelector('.calendar .day.selected');
@@ -184,12 +141,12 @@
           opt.value = `${String(h).padStart(2,'0')}:${min}`;
           opt.textContent = opt.value;
 
-          // jeśli zajęte
+          // blokuj zajęte sloty z bookedSlots
           if(bookedSlots.includes(slot)){
             opt.disabled = true;
             opt.textContent += ' (zajęte)';
           }
-          // jeśli dzisiaj i czas przeszły
+          // blokuj przeszłe dziś
           if(isToday){
             const [hh,mm] = [h, +min];
             if(hh < today.getHours() ||
@@ -221,6 +178,7 @@
       inp.value= `${sel.dataset.date} ${time}`;
       form.appendChild(inp);
 
+      // wysyłamy do POST-owego endpointu Workflow A
       fetch(form.action,{
         method:'POST', body:new FormData(form),
       })
@@ -229,7 +187,7 @@
       .catch(_=> status.textContent = 'Błąd sieci.');
     });
 
-    // start
+    // Start
     renderCalendar();
 
   })();
